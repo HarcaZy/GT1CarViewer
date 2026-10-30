@@ -16,15 +16,21 @@ public sealed class MainForm : Form
     private readonly TextBox _searchBox = new();
     private readonly ListBox _carList = new();
     private readonly ComboBox _colorPicker = new();
+    private readonly ComboBox _languagePicker = new();
     private readonly Label _carTitle = new();
     private readonly Label _carMetadata = new();
     private readonly Label _sourceLabel = new();
     private readonly Label _statusLabel = new();
     private readonly Label _garageCount = new();
+    private readonly Label _garageTitle = new();
+    private readonly Label _modelsLabel = new();
+    private readonly Label _languageLabel = new();
+    private readonly Label _uvOffsetLabel = new();
     private readonly CheckBox _textureToggle = new();
     private readonly CheckBox _edgesToggle = new();
     private readonly CheckBox _spinToggle = new();
     private readonly NumericUpDown _verticalUvOffset = new();
+    private readonly Button _openButton = new();
     private readonly Button _exportButton = new();
     private CarDataSource? _dataSource;
     private CarArchive? _currentArchive;
@@ -36,7 +42,8 @@ public sealed class MainForm : Form
     public MainForm(string? initialPath = null)
     {
         _initialPath = initialPath;
-        Text = "GT1 Car Viewer";
+        Text = AppText.Get("WindowTitle");
+        Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         MinimumSize = new Size(920, 600);
         Size = new Size(1320, 820);
         StartPosition = FormStartPosition.CenterScreen;
@@ -90,10 +97,10 @@ public sealed class MainForm : Form
         _currentTexture = null;
         _viewport.SetCar(null, null);
         _colorPicker.Items.Clear();
-        _carTitle.Text = _currentArchive is null ? "Choisissez une voiture" : "Aucun résultat";
+        _carTitle.Text = AppText.Get(_currentArchive is null ? "ChooseCar" : "NoResults");
         _carMetadata.Text = string.Empty;
         _exportButton.Enabled = false;
-        _statusLabel.Text = "Prêt — ouvrez une image BIN ou un CAR.DAT";
+        _statusLabel.Text = AppText.Get("Ready");
     }
 
     private void BuildLayout()
@@ -163,15 +170,16 @@ public sealed class MainForm : Form
             Padding = new Padding(0, 17, 0, 0),
             BackColor = Color.Transparent
         };
-        var openButton = CreateButton("Ouvrir une image", emphasized: false);
-        openButton.Width = 148;
-        openButton.Click += async (_, _) => await OpenSourceDialogAsync();
-        _exportButton.Text = "Exporter OBJ";
+        _openButton.Text = AppText.Get("OpenImage");
+        StyleButton(_openButton, emphasized: false);
+        _openButton.Width = 148;
+        _openButton.Click += async (_, _) => await OpenSourceDialogAsync();
+        _exportButton.Text = AppText.Get("ExportObj");
         StyleButton(_exportButton, emphasized: true);
         _exportButton.Width = 138;
         _exportButton.Enabled = false;
         _exportButton.Click += async (_, _) => await ExportCurrentCarAsync();
-        actions.Controls.Add(openButton);
+        actions.Controls.Add(_openButton);
         actions.Controls.Add(_exportButton);
         header.Controls.Add(actions);
         return header;
@@ -184,7 +192,7 @@ public sealed class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(20, 20, 18, 14),
             ColumnCount = 1,
-            RowCount = 7,
+            RowCount = 8,
             BackColor = PanelColor
         };
         sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 51));
@@ -193,6 +201,7 @@ public sealed class MainForm : Form
         sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
         sidebar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 68));
+        sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
         sidebar.RowStyles.Add(new RowStyle(SizeType.Absolute, 35));
 
         var title = new TableLayoutPanel
@@ -203,13 +212,15 @@ public sealed class MainForm : Form
             BackColor = Color.Transparent,
             Margin = Padding.Empty
         };
-        var garageTitle = StyledLabel("Votre garage", 15, Color.FromArgb(244, 247, 250), bold: true);
-        garageTitle.Dock = DockStyle.Fill;
-        _garageCount.Text = "Ouvrez une image pour afficher les voitures";
+        _garageTitle.Text = AppText.Get("Garage");
+        _garageTitle.Font = new Font("Segoe UI", 15, FontStyle.Bold);
+        _garageTitle.ForeColor = Color.FromArgb(244, 247, 250);
+        _garageTitle.Dock = DockStyle.Fill;
+        _garageCount.Text = AppText.Get("GarageHint");
         _garageCount.Font = new Font("Segoe UI", 8.5f);
         _garageCount.ForeColor = MutedText;
         _garageCount.Dock = DockStyle.Fill;
-        title.Controls.Add(garageTitle, 0, 0);
+        title.Controls.Add(_garageTitle, 0, 0);
         title.Controls.Add(_garageCount, 0, 1);
         sidebar.Controls.Add(title, 0, 0);
 
@@ -222,22 +233,24 @@ public sealed class MainForm : Form
         _searchBox.BackColor = RaisedColor;
         _searchBox.ForeColor = Color.FromArgb(232, 238, 245);
         _searchBox.Font = new Font("Segoe UI", 9.5f);
-        _searchBox.PlaceholderText = "Rechercher une voiture...";
+        _searchBox.PlaceholderText = AppText.Get("SearchCars");
         _searchBox.Dock = DockStyle.Fill;
         _searchBox.Margin = new Padding(0, 5, 0, 0);
         _searchBox.TextChanged += (_, _) => FilterCars();
         sidebar.Controls.Add(_searchBox, 0, 2);
 
         var listHeader = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
-        var listLabel = StyledLabel("MODÈLES", 8, MutedText, bold: true);
-        listLabel.Dock = DockStyle.Left;
-        listLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _modelsLabel.Text = AppText.Get("Models");
+        _modelsLabel.Font = new Font("Segoe UI", 8, FontStyle.Bold);
+        _modelsLabel.ForeColor = MutedText;
+        _modelsLabel.Dock = DockStyle.Left;
+        _modelsLabel.TextAlign = ContentAlignment.MiddleLeft;
         var countLabel = StyledLabel("", 8, MutedText);
         countLabel.Name = "visibleCount";
         countLabel.Dock = DockStyle.Right;
         countLabel.TextAlign = ContentAlignment.MiddleRight;
         listHeader.Controls.Add(countLabel);
-        listHeader.Controls.Add(listLabel);
+        listHeader.Controls.Add(_modelsLabel);
         sidebar.Controls.Add(listHeader, 0, 3);
 
         _carList.Dock = DockStyle.Fill;
@@ -248,7 +261,7 @@ public sealed class MainForm : Form
         _carList.DrawMode = DrawMode.OwnerDrawFixed;
         _carList.ItemHeight = 37;
         _carList.IntegralHeight = false;
-        _carList.AccessibleName = "Liste des voitures";
+        _carList.AccessibleName = AppText.Get("CarList");
         _carList.DrawItem += DrawCarItem;
         _carList.SelectedIndexChanged += async (_, _) => await SelectCarAsync();
         sidebar.Controls.Add(_carList, 0, 4);
@@ -265,10 +278,10 @@ public sealed class MainForm : Form
         options.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         options.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         options.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
-        _textureToggle.Text = "Textures";
+        _textureToggle.Text = AppText.Get("Textures");
         _textureToggle.Checked = true;
-        _edgesToggle.Text = "Contours";
-        _spinToggle.Text = "Rotation auto";
+        _edgesToggle.Text = AppText.Get("Wireframe");
+        _spinToggle.Text = AppText.Get("AutoRotate");
         _spinToggle.Checked = true;
         _textureToggle.CheckedChanged += (_, _) => { _viewport.ShowTexture = _textureToggle.Checked; _viewport.Invalidate(); };
         _edgesToggle.CheckedChanged += (_, _) => { _viewport.ShowEdges = _edgesToggle.Checked; _viewport.Invalidate(); };
@@ -286,10 +299,12 @@ public sealed class MainForm : Form
             Padding = new Padding(0, 4, 0, 0),
             Margin = Padding.Empty
         };
-        var uvOffsetLabel = StyledLabel("UV ↑", 8.5f, Color.FromArgb(197, 208, 220));
-        uvOffsetLabel.AutoSize = true;
-        uvOffsetLabel.TextAlign = ContentAlignment.MiddleLeft;
-        uvOffsetLabel.Margin = new Padding(0, 5, 5, 0);
+        _uvOffsetLabel.Text = "UV ↑";
+        _uvOffsetLabel.Font = new Font("Segoe UI", 8.5f);
+        _uvOffsetLabel.ForeColor = Color.FromArgb(197, 208, 220);
+        _uvOffsetLabel.AutoSize = true;
+        _uvOffsetLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _uvOffsetLabel.Margin = new Padding(0, 5, 5, 0);
         _verticalUvOffset.Minimum = -CarTexture.MaximumVerticalUvOffset;
         _verticalUvOffset.Maximum = CarTexture.MaximumVerticalUvOffset;
         _verticalUvOffset.Width = 58;
@@ -298,9 +313,9 @@ public sealed class MainForm : Form
         _verticalUvOffset.ForeColor = Color.FromArgb(235, 240, 246);
         _verticalUvOffset.BorderStyle = BorderStyle.FixedSingle;
         _verticalUvOffset.Font = new Font("Segoe UI", 8.5f);
-        _verticalUvOffset.AccessibleName = "Correction verticale des UV en pixels";
+        _verticalUvOffset.AccessibleName = AppText.Get("UvCorrection");
         _verticalUvOffset.ValueChanged += (_, _) => _viewport.VerticalUvOffset = (int)_verticalUvOffset.Value;
-        uvOffsetPanel.Controls.Add(uvOffsetLabel);
+        uvOffsetPanel.Controls.Add(_uvOffsetLabel);
         uvOffsetPanel.Controls.Add(_verticalUvOffset);
         options.Controls.Add(_textureToggle, 0, 0);
         options.Controls.Add(_edgesToggle, 1, 0);
@@ -308,13 +323,41 @@ public sealed class MainForm : Form
         options.Controls.Add(uvOffsetPanel, 1, 1);
         sidebar.Controls.Add(options, 0, 5);
 
+        var languagePanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            BackColor = Color.Transparent,
+            Margin = Padding.Empty
+        };
+        languagePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 74));
+        languagePanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        _languageLabel.Text = AppText.Get("Language");
+        _languageLabel.Font = new Font("Segoe UI", 8.5f);
+        _languageLabel.ForeColor = Color.FromArgb(197, 208, 220);
+        _languageLabel.Dock = DockStyle.Fill;
+        _languageLabel.TextAlign = ContentAlignment.MiddleLeft;
+        _languagePicker.DropDownStyle = ComboBoxStyle.DropDownList;
+        _languagePicker.AccessibleName = AppText.Get("Language");
+        StyleCombo(_languagePicker);
+        _languagePicker.Items.AddRange(AppText.SupportedLanguages
+            .Select(language => new LanguageChoice(language, AppText.GetLanguageName(language)))
+            .Cast<object>()
+            .ToArray());
+        _languagePicker.SelectedIndex = AppText.SupportedLanguages.ToList().IndexOf(AppText.Language);
+        _languagePicker.SelectedIndexChanged += (_, _) => ChangeLanguage();
+        languagePanel.Controls.Add(_languageLabel, 0, 0);
+        languagePanel.Controls.Add(_languagePicker, 1, 0);
+        sidebar.Controls.Add(languagePanel, 0, 6);
+
         _sourceLabel.Text = "BIN • CAR.DAT • CARCADE.DAT";
         _sourceLabel.ForeColor = Color.FromArgb(124, 142, 160);
         _sourceLabel.Font = new Font("Segoe UI", 8);
         _sourceLabel.AutoEllipsis = true;
         _sourceLabel.TextAlign = ContentAlignment.MiddleLeft;
         _sourceLabel.Dock = DockStyle.Fill;
-        sidebar.Controls.Add(_sourceLabel, 0, 6);
+        sidebar.Controls.Add(_sourceLabel, 0, 7);
         return sidebar;
     }
 
@@ -344,12 +387,12 @@ public sealed class MainForm : Form
         details.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 178));
         details.RowStyles.Add(new RowStyle(SizeType.Percent, 60));
         details.RowStyles.Add(new RowStyle(SizeType.Percent, 40));
-        _carTitle.Text = "Choisissez une voiture";
+        _carTitle.Text = AppText.Get("ChooseCar");
         _carTitle.Font = new Font("Segoe UI", 14, FontStyle.Bold);
         _carTitle.ForeColor = Color.FromArgb(244, 247, 250);
         _carTitle.Dock = DockStyle.Fill;
         _carTitle.TextAlign = ContentAlignment.BottomLeft;
-        _carMetadata.Text = "Les modèles et textures sont lus depuis l’image, sans extraction préalable.";
+        _carMetadata.Text = AppText.Get("CarMetadataHint");
         _carMetadata.Font = new Font("Segoe UI", 8.5f);
         _carMetadata.ForeColor = MutedText;
         _carMetadata.Dock = DockStyle.Fill;
@@ -372,11 +415,12 @@ public sealed class MainForm : Form
         panel.Controls.Add(details, 0, 0);
 
         _viewport.Margin = Padding.Empty;
-        _viewport.AccessibleDescription = "Faites glisser la souris pour faire tourner la voiture. La molette règle le zoom.";
+        _viewport.AccessibleName = AppText.Get("ViewportName");
+        _viewport.AccessibleDescription = AppText.Get("ViewportDescription");
         panel.Controls.Add(_viewport, 0, 1);
 
         var footer = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(0, 10, 0, 0) };
-        _statusLabel.Text = "Prêt — ouvrez une image BIN ou un CAR.DAT";
+        _statusLabel.Text = AppText.Get("Ready");
         _statusLabel.Font = new Font("Segoe UI", 8.5f);
         _statusLabel.ForeColor = MutedText;
         _statusLabel.AutoEllipsis = true;
@@ -390,8 +434,8 @@ public sealed class MainForm : Form
     {
         using var dialog = new OpenFileDialog
         {
-            Title = "Ouvrir une image Gran Turismo ou un archive voiture",
-            Filter = "Gran Turismo (BIN, DAT)|*.bin;*.dat|Images BIN|*.bin|Archives CAR.DAT|*.dat|Tous les fichiers|*.*",
+            Title = AppText.Get("OpenDialogTitle"),
+            Filter = AppText.Get("OpenFilter"),
             CheckFileExists = true,
             Multiselect = false,
             InitialDirectory = Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"))
@@ -415,7 +459,7 @@ public sealed class MainForm : Form
         _archivePicker.Items.Clear();
         _carList.Items.Clear();
         _exportButton.Enabled = false;
-        _statusLabel.Text = "Lecture de l’image et des archives voiture...";
+        _statusLabel.Text = AppText.Get("ReadingImage");
         UseWaitCursor = true;
         _sourceLabel.Text = Path.GetFileName(path);
 
@@ -431,19 +475,19 @@ public sealed class MainForm : Form
 
             if (_archivePicker.Items.Count == 0)
             {
-                throw new InvalidDataException("Aucune archive CAR.DAT ou CARCADE.DAT n’a été trouvée.");
+                throw new InvalidDataException(AppText.Get("NoArchivesFound"));
             }
 
             _archivePicker.SelectedIndex = 0;
             _sourceLabel.Text = Path.GetFileName(path);
-            _statusLabel.Text = $"Image prête • {_archivePicker.Items.Count} archive(s) chargée(s)";
+            _statusLabel.Text = AppText.Get("ImageReady", _archivePicker.Items.Count);
             _viewport.Focus();
         }
         catch (Exception error)
         {
             _dataSource = null;
-            _statusLabel.Text = "L’ouverture a échoué.";
-            MessageBox.Show(this, error.Message, "Impossible d’ouvrir cette archive", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _statusLabel.Text = AppText.Get("OpenFailed");
+            MessageBox.Show(this, error.Message, AppText.Get("OpenFailedTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -469,7 +513,7 @@ public sealed class MainForm : Form
         }
 
         _carList.EndUpdate();
-        _garageCount.Text = $"{selected.Archive.CarCount:N0} voitures • {selected.Archive.Name}";
+        _garageCount.Text = AppText.Get("CarsInArchive", selected.Archive.CarCount, selected.Archive.Name);
         _syncing = false;
         if (_carList.Items.Count > 0)
         {
@@ -532,7 +576,7 @@ public sealed class MainForm : Form
 
         int version = ++_selectionVersion;
         CarArchive archive = _currentArchive;
-        _statusLabel.Text = $"Décodage de la voiture {choice.DisplayNumber}...";
+        _statusLabel.Text = AppText.Get("DecodingCar", choice.DisplayNumber);
         _exportButton.Enabled = false;
 
         try
@@ -554,7 +598,7 @@ public sealed class MainForm : Form
             _colorPicker.Items.Clear();
             foreach (byte id in texture.ColorIds)
             {
-                _colorPicker.Items.Add($"Teinte {id:X2}");
+                _colorPicker.Items.Add(AppText.Get("ColorNumber", id));
             }
 
             _colorPicker.EndUpdate();
@@ -562,10 +606,10 @@ public sealed class MainForm : Form
             int faceCount = model.Lods[0].Faces.Count;
             int skipped = model.Lods.Sum(lod => lod.SkippedFaceCount);
             _carTitle.Text = choice.Name;
-            _carMetadata.Text = $"LOD 1 • {model.Lods[0].Vertices.Count:N0} sommets • {faceCount:N0} faces" +
-                                (skipped > 0 ? $" • {skipped:N0} faces ignorées" : string.Empty);
+            _carMetadata.Text = AppText.Get("LodMetadata", model.Lods[0].Vertices.Count, faceCount) +
+                                (skipped > 0 ? AppText.Get("SkippedFaces", skipped) : string.Empty);
             _exportButton.Enabled = true;
-            _statusLabel.Text = $"{archive.Name} • {texture.ColorCount} teinte(s) • {model.Lods.Count}/{model.DeclaredLodCount} niveau(x) de détail";
+            _statusLabel.Text = AppText.Get("ModelStatus", archive.Name, texture.ColorCount, model.Lods.Count, model.DeclaredLodCount);
         }
         catch (Exception error)
         {
@@ -578,9 +622,9 @@ public sealed class MainForm : Form
             _currentTexture = null;
             _viewport.SetCar(null, null);
             _carTitle.Text = choice.Name;
-            _carMetadata.Text = "Ce modèle n’a pas pu être décodé.";
-            _statusLabel.Text = "Erreur de lecture du modèle.";
-            MessageBox.Show(this, error.Message, $"Impossible de lire {choice.Name}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _carMetadata.Text = AppText.Get("ModelDecodeFailed");
+            _statusLabel.Text = AppText.Get("ModelReadFailed");
+            MessageBox.Show(this, error.Message, AppText.Get("ModelReadFailedTitle", choice.Name), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -593,8 +637,8 @@ public sealed class MainForm : Form
 
         using var dialog = new SaveFileDialog
         {
-            Title = "Exporter le modèle de la voiture",
-            Filter = "Modèle Wavefront OBJ|*.obj",
+            Title = AppText.Get("ExportDialogTitle"),
+            Filter = AppText.Get("ObjFilter"),
             DefaultExt = "obj",
             AddExtension = true,
             FileName = $"{choice.FileStem}.obj",
@@ -626,13 +670,13 @@ public sealed class MainForm : Form
                 File.WriteAllBytes(texturePath, export.TextureBitmap);
             });
 
-            _statusLabel.Text = $"Modèle, matériaux et textures exportés dans {directory}";
-            MessageBox.Show(this, $"Les trois fichiers OBJ, MTL et BMP sont prêts dans :\n{directory}", "Export terminé", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            _statusLabel.Text = AppText.Get("ExportProgress", directory);
+            MessageBox.Show(this, AppText.Get("ExportSuccess", directory), AppText.Get("ExportSuccessTitle"), MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception error)
         {
-            _statusLabel.Text = "L’export a échoué.";
-            MessageBox.Show(this, error.Message, "Impossible d’exporter ce modèle", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            _statusLabel.Text = AppText.Get("ExportFailed");
+            MessageBox.Show(this, error.Message, AppText.Get("ExportFailedTitle"), MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -723,14 +767,131 @@ public sealed class MainForm : Form
             AutoEllipsis = true
         };
 
+    private void ChangeLanguage()
+    {
+        if (_languagePicker.SelectedItem is not LanguageChoice choice || choice.Language == AppText.Language)
+        {
+            return;
+        }
+
+        AppText.SetLanguage(choice.Language);
+        ApplyLanguage();
+        try
+        {
+            AppText.SavePreference();
+        }
+        catch (IOException error)
+        {
+            MessageBox.Show(this, $"{AppText.Get("LanguageSaveFailed")}\n{error.Message}",
+                AppText.Get("LanguageSaveFailedTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+        catch (UnauthorizedAccessException error)
+        {
+            MessageBox.Show(this, $"{AppText.Get("LanguageSaveFailed")}\n{error.Message}",
+                AppText.Get("LanguageSaveFailedTitle"), MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
+    }
+
+    private void ApplyLanguage()
+    {
+        Text = AppText.Get("WindowTitle");
+        _openButton.Text = AppText.Get("OpenImage");
+        _exportButton.Text = AppText.Get("ExportObj");
+        _garageTitle.Text = AppText.Get("Garage");
+        _searchBox.PlaceholderText = AppText.Get("SearchCars");
+        _modelsLabel.Text = AppText.Get("Models");
+        _carList.AccessibleName = AppText.Get("CarList");
+        _textureToggle.Text = AppText.Get("Textures");
+        _edgesToggle.Text = AppText.Get("Wireframe");
+        _spinToggle.Text = AppText.Get("AutoRotate");
+        _verticalUvOffset.AccessibleName = AppText.Get("UvCorrection");
+        _languageLabel.Text = AppText.Get("Language");
+        _languagePicker.AccessibleName = AppText.Get("Language");
+        _viewport.AccessibleName = AppText.Get("ViewportName");
+        _viewport.AccessibleDescription = AppText.Get("ViewportDescription");
+        _viewport.Invalidate();
+
+        int archiveIndex = _archivePicker.SelectedIndex;
+        _syncing = true;
+        _archivePicker.BeginUpdate();
+        _archivePicker.Items.Clear();
+        if (_dataSource is not null)
+        {
+            foreach (CarArchive archive in _dataSource.Archives)
+            {
+                _archivePicker.Items.Add(new ArchiveChoice(archive));
+            }
+        }
+
+        if (archiveIndex >= 0 && archiveIndex < _archivePicker.Items.Count)
+        {
+            _archivePicker.SelectedIndex = archiveIndex;
+        }
+
+        _archivePicker.EndUpdate();
+        _syncing = false;
+
+        if (_currentArchive is null)
+        {
+            _garageCount.Text = AppText.Get("GarageHint");
+            _carTitle.Text = AppText.Get("ChooseCar");
+            _statusLabel.Text = AppText.Get("Ready");
+        }
+        else
+        {
+            _garageCount.Text = AppText.Get("CarsInArchive", _currentArchive.CarCount, _currentArchive.Name);
+            if (_currentModel is not null && _currentTexture is not null &&
+                _carList.SelectedItem is CarChoice car)
+            {
+                _carTitle.Text = car.Name;
+                int selectedColor = _colorPicker.SelectedIndex;
+                int faceCount = _currentModel.Lods[0].Faces.Count;
+                int skipped = _currentModel.Lods.Sum(lod => lod.SkippedFaceCount);
+                _carMetadata.Text = AppText.Get("LodMetadata", _currentModel.Lods[0].Vertices.Count, faceCount) +
+                                    (skipped > 0 ? AppText.Get("SkippedFaces", skipped) : string.Empty);
+                _colorPicker.BeginUpdate();
+                _colorPicker.Items.Clear();
+                foreach (byte id in _currentTexture.ColorIds)
+                {
+                    _colorPicker.Items.Add(AppText.Get("ColorNumber", id));
+                }
+
+                _colorPicker.EndUpdate();
+                _colorPicker.SelectedIndex = Math.Clamp(selectedColor, 0, _colorPicker.Items.Count - 1);
+                _statusLabel.Text = AppText.Get(
+                    "ModelStatus",
+                    _currentArchive.Name,
+                    _currentTexture.ColorCount,
+                    _currentModel.Lods.Count,
+                    _currentModel.DeclaredLodCount);
+            }
+            else
+            {
+                _carTitle.Text = _carList.SelectedItem is CarChoice selectedCar
+                    ? selectedCar.Name
+                    : AppText.Get("NoResults");
+                _carMetadata.Text = AppText.Get("CarMetadataHint");
+                _statusLabel.Text = AppText.Get("Ready");
+            }
+        }
+
+        _carList.Invalidate();
+        UpdateVisibleCount();
+    }
+
+    private sealed record LanguageChoice(AppLanguage Language, string Name)
+    {
+        public override string ToString() => Name;
+    }
+
     private sealed record ArchiveChoice(CarArchive Archive)
     {
-        public override string ToString() => $"{Archive.Name}   ·   {Archive.CarCount:N0} voitures";
+        public override string ToString() => AppText.Get("ArchiveCaption", Archive.Name, Archive.CarCount);
     }
 
     private sealed record CarChoice(int Index)
     {
-        public string DisplayNumber => $"Véhicule {Index + 1:000}";
+        public string DisplayNumber => AppText.Get("CarNumber", Index + 1);
         public string Name => DisplayNumber;
         public string FileStem => $"GT1_{Index + 1:000}";
         public string SearchIndex => $"{Index + 1:000}";

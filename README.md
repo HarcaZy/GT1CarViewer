@@ -1,19 +1,35 @@
 # GT1 Car Viewer
 
-Visionneuse Windows pour les voitures de *Gran Turismo* sur PlayStation.
+Visionneuse Windows multilingue pour les voitures de *Gran Turismo* sur PlayStation.
 Elle ouvre les images BIN brutes de 2352 octets par secteur, les images ISO
 2048 et les archives `CAR.DAT` / `CARCADE.DAT` directement, sans modifier
 l’image et sans extraire les voitures au préalable.
 
 ## Utilisation
 
-Publiez l’application, puis ouvrez
-`GT1CarViewer.App\bin\Release\net10.0-windows\publish\GT1CarViewer.App.exe`.
-Le runtime .NET Desktop 10 doit être installé.
+L’interface est disponible en français, anglais, espagnol et japonais. La
+langue suit celle de Windows au premier démarrage et peut être modifiée dans
+la barre latérale ; le choix est conservé pour les démarrages suivants.
+
+Pour créer l’installateur Windows x64 autonome, installez Inno Setup 6 puis
+exécutez :
+
+```powershell
+.\build-installer.ps1
+```
+
+Le fichier `installer\Output\GT1CarViewer-Setup-1.0.0.exe` installe
+l’application pour l’utilisateur courant, crée un raccourci dans le menu
+Démarrer et propose un raccourci sur le bureau. Aucun runtime .NET séparé
+n’est requis. Les exécutables utilisent `GT1CarViewerIcon.ico`.
+
+Pour publier l’application sans l’installateur :
 
 ```powershell
 dotnet publish .\GT1CarViewer.App\GT1CarViewer.App.csproj -c Release -p:EnableWindowsTargeting=true
 ```
+
+Cette publication classique nécessite le runtime .NET Desktop 10.
 
 Pour la lancer directement depuis le dossier du projet :
 

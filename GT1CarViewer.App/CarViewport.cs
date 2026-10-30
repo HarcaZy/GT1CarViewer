@@ -22,7 +22,7 @@ public sealed class CarViewport : Control
     {
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
         BackColor = Color.FromArgb(13, 19, 27);
-        AccessibleName = "Aperçu 3D de la voiture";
+        AccessibleName = AppText.Get("ViewportName");
         TabStop = true;
         Cursor = Cursors.Hand;
         AutoRotate = true;
@@ -96,7 +96,7 @@ public sealed class CarViewport : Control
         e.Graphics.DrawImageUnscaled(frame, 0, 0);
         using var font = new Font("Segoe UI", 9);
         using var brush = new SolidBrush(Color.FromArgb(175, 190, 204));
-        e.Graphics.DrawString("Glisser pour tourner  |  Molette pour zoomer", font, brush, 18, Height - 34);
+        e.Graphics.DrawString(AppText.Get("ViewportHelp"), font, brush, 18, Height - 34);
     }
 
     protected override void OnMouseDown(MouseEventArgs e)
@@ -454,8 +454,8 @@ public sealed class CarViewport : Control
         using var bodyFont = new Font("Segoe UI", 10);
         using var titleBrush = new SolidBrush(Color.FromArgb(235, 239, 244));
         using var bodyBrush = new SolidBrush(Color.FromArgb(150, 169, 186));
-        string title = "Votre garage Gran Turismo";
-        string message = "Ouvrez une image BIN ou un fichier CAR.DAT pour commencer.";
+        string title = AppText.Get("EmptyGarage");
+        string message = AppText.Get("EmptyGarageHint");
         SizeF titleSize = graphics.MeasureString(title, titleFont);
         SizeF bodySize = graphics.MeasureString(message, bodyFont);
         float centerY = Height / 2f;
